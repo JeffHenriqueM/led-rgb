@@ -236,3 +236,45 @@ input[type='range'] { width: 100%; accent-color: var(--accent); }
   font-size: 14px;
 }
 .naming:focus { border-color: var(--accent); border-bottom-color: var(--accent); }
+
+/* --- telas largas ---
+   No celular tudo e uma coluna so. No desktop a coluna estreita sobra
+   espaco dos dois lados, entao os controles se espalham: cor e brilho
+   lado a lado, e os efeitos ocupando a largura inteira — que e onde os
+   30 chips param de virar uma lista vertical infinita. */
+
+@media (min-width: 760px) {
+  .app {
+    max-width: 900px;
+    padding: 32px 24px 56px;
+    gap: 16px;
+  }
+
+  .head h1 { font-size: 24px; }
+
+  .stack {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+    gap: 16px;
+  }
+
+  /* Liga/desliga e efeitos atravessam; cor e brilho dividem a linha. */
+  .stack > .card:nth-child(1) { grid-column: 1 / -1; }
+  .stack > .card:nth-child(2) { grid-column: 1; }
+  .stack > .card:nth-child(3) { grid-column: 2; }
+  .stack > .card:nth-child(4) { grid-column: 1 / -1; }
+
+  .card { padding: 18px; }
+
+  .picker { height: 96px; }
+}
+
+/* Estados de hover so fazem sentido onde existe ponteiro — no celular
+   eles grudam depois do toque. */
+@media (hover: hover) {
+  button:hover:not(:disabled) { border-color: var(--dim); }
+  button.primary:hover:not(:disabled) { filter: brightness(1.08); }
+  .swatch:hover { transform: scale(1.06); }
+  .swatch { transition: transform 0.12s ease; }
+}
