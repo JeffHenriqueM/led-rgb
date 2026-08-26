@@ -73,16 +73,14 @@ export function effect(mode: number): Packet {
   return packet(0x03, [clamp(mode, 0x80, 0x9d), 0x03])
 }
 
-/** Os efeitos embutidos que valem a pena expor na interface. */
-export const EFFECTS = [
-  { mode: 0x87, label: 'Pulsar vermelho' },
-  { mode: 0x88, label: 'Pulsar verde' },
-  { mode: 0x89, label: 'Pulsar azul' },
-  { mode: 0x8d, label: 'Pulsar arco-íris' },
-  { mode: 0x8e, label: 'Piscar arco-íris' },
-  { mode: 0x91, label: 'Fade suave' },
-  { mode: 0x97, label: 'Estrobo branco' },
-] as const
+/**
+ * O controlador tem 30 efeitos embutidos, nos modos 0x80 a 0x9D.
+ *
+ * Nao ha tabela oficial do que cada um faz, e ela varia entre revisoes
+ * de hardware — por isso a interface mostra todos e deixa o usuario
+ * nomear o que viu, em vez de confiar num rotulo chutado.
+ */
+export const EFFECT_MODES = Array.from({ length: 0x9d - 0x80 + 1 }, (_, i) => 0x80 + i)
 
 /** Converte "#ff8800" em [255, 136, 0]. */
 export function hexToRgb(hex: string): [number, number, number] {

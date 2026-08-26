@@ -45,6 +45,8 @@ export default function App() {
   const [error, setError] = useState<string | null>(null)
   const [color, setColor] = useState('#00d4ff')
   const [bright, setBright] = useState(100)
+  const [speed, setSpeed] = useState(50)
+  const [lastEffect, setLastEffect] = useState<number | null>(null)
 
   // As mudanças de estado vivem dentro dos objetos LedStrip, não no React.
   // Este contador existe só pra forçar o re-render quando elas acontecem.
@@ -112,6 +114,11 @@ export default function App() {
   const applyBrightness = (percent: number) => {
     setBright(percent)
     throttled(() => broadcast(elk.brightness(percent)))
+  }
+
+  const applySpeed = (percent: number) => {
+    setSpeed(percent)
+    throttled(() => broadcast(elk.speed(percent)))
   }
 
   if (!isSupported()) {
@@ -231,14 +238,47 @@ export default function App() {
         </div>
 
         <div className="card">
-          <label className="label">Efeitos</label>
+          <label className="label">
+            Efeitos <span className="dim">{elk.EFFECT_MODES.length} modos do controlador</span>
+          </label>
           <div className="effects">
-            {elk.EFFECTS.map((fx) => (
-              <button key={fx.mode} className="chip" onClick={() => broadcast(elk.effect(fx.mode))}>
-                {fx.label}
+            {elk.EFFECT_MODES.map((mode, i) => (
+              <button
+                key={mode}
+                className={`chip ${mode === lastEffect ? 'on' : ''}`}
+                onClick={() => {
+                  setLastEffect(mode)
+                  broadcast(elk.effect(mode))
+                }}
+              >
+                {getName(`fx:${mode}`, `${i + 1}`)}
               </button>
             ))}
           </div>
+
+          {lastEffect !== null && (
+            <input
+              key={lastEffect}
+              className="rename naming"
+              defaultValue={getName(`fx:${lastEffect}`, '')}
+              placeholder="O que apareceu? Dê um nome a este efeito"
+              onChange={(e) => {
+                setName(`fx:${lastEffect}`, e.target.value)
+                rerender()
+              }}
+            />
+          )}
+
+          <label className="label">
+            Velocidade <span className="dim">{speed}%</span>
+          </label>
+          <input
+            type="range"
+            min={0}
+            max={100}
+            value={speed}
+            onChange={(e) => applySpeed(Number(e.target.value))}
+          />
         </div>
       </fieldset>
     </main>

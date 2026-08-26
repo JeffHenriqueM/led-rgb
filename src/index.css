@@ -216,3 +216,23 @@ input[type='range'] { width: 100%; accent-color: var(--accent); }
   color: var(--dim);
   border-radius: 8px;
 }
+
+.chip.on {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.effects { gap: 6px; }
+
+.chip {
+  min-width: 38px;
+  text-align: center;
+}
+
+.naming {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 14px;
+}
+.naming:focus { border-color: var(--accent); border-bottom-color: var(--accent); }
