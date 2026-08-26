@@ -33,3 +33,27 @@ export function setName(id: string, name: string): void {
     // Modo anonimo / storage cheio: perder o apelido nao quebra nada.
   }
 }
+
+/**
+ * Apaga os apelidos que comecam com um prefixo ('fx:' para os efeitos).
+ *
+ * Existe porque um apelido antigo tem prioridade sobre o padrao do
+ * codigo: sem isso, uma melhoria nos nomes padrao nunca apareceria pra
+ * quem ja tinha renomeado.
+ */
+export function clearNames(prefix: string): void {
+  const all = read()
+  for (const key of Object.keys(all)) {
+    if (key.startsWith(prefix)) delete all[key]
+  }
+  try {
+    localStorage.setItem(KEY, JSON.stringify(all))
+  } catch {
+    // Sem storage nao ha o que limpar.
+  }
+}
+
+/** Ha algum apelido salvo com esse prefixo? */
+export function hasNames(prefix: string): boolean {
+  return Object.keys(read()).some((key) => key.startsWith(prefix))
+}

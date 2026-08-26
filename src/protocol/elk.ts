@@ -67,10 +67,17 @@ export function speed(percent: number): Packet {
   return packet(0x02, [clamp(percent, 0, 100)])
 }
 
-/** Ativa um dos efeitos embutidos no controlador. */
-export function effect(mode: number): Packet {
-  // 7E 00 03 <modo> 03 00 00 00 EF
-  return packet(0x03, [clamp(mode, 0x80, 0x9d), 0x03])
+/**
+ * Ativa um dos efeitos embutidos no controlador.
+ *
+ * O byte apos o modo e a velocidade da animacao. O valor 0x03 aparece
+ * como padrao na maior parte da documentacao da familia, mas a escala
+ * exata (e ate o sentido — se maior e mais rapido ou mais lento) varia
+ * entre revisoes. Por isso ele e parametro, e nao constante.
+ */
+export function effect(mode: number, speedByte = 0x03): Packet {
+  // 7E 00 03 <modo> <velocidade> 00 00 00 EF
+  return packet(0x03, [clamp(mode, 0x80, 0x9d), clamp(speedByte, 0, 100)])
 }
 
 /**
@@ -93,33 +100,33 @@ export const EFFECT_MODES = Array.from({ length: 0x9d - 0x80 + 1 }, (_, i) => 0x
 export const EFFECT_NAMES: readonly string[] = [
   'Vermelho com branco movendo',
   'Vermelho com cores movendo',
-  'Vermelho com cores movendo 2',
+  'Vermelho com cores movendo (inverso)',
   'Verde com branco movendo',
   'Vermelho com cores movendo',
-  'Azul forte com cores movendo 2',
-  'Azul forte com cores movendo 2',
+  'Azul forte com cores movendo (inverso)',
+  'Azul forte com cores movendo (inverso)',
   'Amarelo com cores movendo',
-  'Amarelo com cores movendo 2',
+  'Amarelo com cores movendo (inverso)',
   'Azul com cores movendo',
-  'Azul com cores movendo 2',
+  'Azul com cores movendo (inverso)',
   'Roxo com cores movendo',
-  'Roxo com cores movendo 2',
+  'Roxo com cores movendo (inverso)',
   'Branco com cores movendo',
-  'Branco com cores movendo 2',
+  'Branco com cores movendo (inverso)',
   'Vermelho, branco e desligado',
-  'Vermelho, branco e desligado 2',
+  'Vermelho, branco e desligado (inverso)',
   'Verde, branco e desligado',
-  'Verde, branco e desligado 2',
+  'Verde, branco e desligado (inverso)',
   'Azul forte, branco e desligado',
-  'Azul forte, branco e desligado 2',
+  'Azul forte, branco e desligado (inverso)',
   'Amarelo, branco e desligado',
-  'Amarelo, branco e desligado 2',
+  'Amarelo, branco e desligado (inverso)',
   'Azul, branco e desligado',
-  'Azul, branco e desligado 2',
+  'Azul, branco e desligado (inverso)',
   'Rosa, branco e desligado',
-  'Azul, branco e desligado 2',
+  'Azul, branco e desligado (inverso)',
   'Vermelho, branco e desligado',
-  'Vermelho, branco e desligado 2',
+  'Vermelho, branco e desligado (inverso)',
   'Verde, branco e desligado',
 ]
 

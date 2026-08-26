@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from 'react'
 import { LedStrip, isSupported } from './ble'
-import { getName, setName } from './names'
+import { clearNames, getName, hasNames, setName } from './names'
 import * as elk from './protocol/elk'
 
 /** Cores de acesso rápido — o que a gente realmente usa no dia a dia. */
@@ -118,7 +118,13 @@ export default function App() {
 
   const applySpeed = (percent: number) => {
     setSpeed(percent)
-    throttled(() => broadcast(elk.speed(percent)))
+    throttled(() => {
+      // Manda os dois: o comando dedicado, que algumas revisoes entendem,
+      // e o efeito atual reenviado com a nova velocidade embutida — que
+      // e o caminho que de fato funciona nesta fita.
+      broadcast(elk.speed(percent))
+      if (lastEffect !== null) broadcast(elk.effect(lastEffect, percent))
+    })
   }
 
   if (!isSupported()) {
@@ -248,7 +254,7 @@ export default function App() {
                 className={`chip ${mode === lastEffect ? 'on' : ''}`}
                 onClick={() => {
                   setLastEffect(mode)
-                  broadcast(elk.effect(mode))
+                  broadcast(elk.effect(mode, speed))
                 }}
               >
                 {getName(`fx:${mode}`, elk.EFFECT_NAMES[i] ?? `${i + 1}`)}
@@ -270,6 +276,18 @@ export default function App() {
                 rerender()
               }}
             />
+          )}
+
+          {hasNames('fx:') && (
+            <button
+              className="mini"
+              onClick={() => {
+                clearNames('fx:')
+                rerender()
+              }}
+            >
+              Restaurar nomes padrão
+            </button>
           )}
 
           <label className="label">
