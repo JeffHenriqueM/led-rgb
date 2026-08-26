@@ -82,6 +82,47 @@ export function effect(mode: number): Packet {
  */
 export const EFFECT_MODES = Array.from({ length: 0x9d - 0x80 + 1 }, (_, i) => 0x80 + i)
 
+/**
+ * Nomes observados na fita do Jeff, na ordem de EFFECT_MODES.
+ *
+ * Nao vieram de documentacao: sao o que aparece de fato quando cada modo
+ * roda. Servem de padrao pra que a lista chegue pronta em qualquer
+ * aparelho — o apelido salvo no navegador continua tendo prioridade,
+ * entao da pra corrigir qualquer um sem mexer no codigo.
+ */
+export const EFFECT_NAMES: readonly string[] = [
+  'Vermelho com branco movendo',
+  'Vermelho com cores movendo',
+  'Vermelho com cores movendo 2',
+  'Verde com branco movendo',
+  'Vermelho com cores movendo',
+  'Azul forte com cores movendo 2',
+  'Azul forte com cores movendo 2',
+  'Amarelo com cores movendo',
+  'Amarelo com cores movendo 2',
+  'Azul com cores movendo',
+  'Azul com cores movendo 2',
+  'Roxo com cores movendo',
+  'Roxo com cores movendo 2',
+  'Branco com cores movendo',
+  'Branco com cores movendo 2',
+  'Vermelho, branco e desligado',
+  'Vermelho, branco e desligado 2',
+  'Verde, branco e desligado',
+  'Verde, branco e desligado 2',
+  'Azul forte, branco e desligado',
+  'Azul forte, branco e desligado 2',
+  'Amarelo, branco e desligado',
+  'Amarelo, branco e desligado 2',
+  'Azul, branco e desligado',
+  'Azul, branco e desligado 2',
+  'Rosa, branco e desligado',
+  'Azul, branco e desligado 2',
+  'Vermelho, branco e desligado',
+  'Vermelho, branco e desligado 2',
+  'Verde, branco e desligado',
+]
+
 /** Converte "#ff8800" em [255, 136, 0]. */
 export function hexToRgb(hex: string): [number, number, number] {
   const v = parseInt(hex.replace('#', ''), 16)

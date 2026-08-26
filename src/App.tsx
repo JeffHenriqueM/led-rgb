@@ -251,7 +251,7 @@ export default function App() {
                   broadcast(elk.effect(mode))
                 }}
               >
-                {getName(`fx:${mode}`, `${i + 1}`)}
+                {getName(`fx:${mode}`, elk.EFFECT_NAMES[i] ?? `${i + 1}`)}
               </button>
             ))}
           </div>
@@ -260,8 +260,11 @@ export default function App() {
             <input
               key={lastEffect}
               className="rename naming"
-              defaultValue={getName(`fx:${lastEffect}`, '')}
-              placeholder="O que apareceu? Dê um nome a este efeito"
+              defaultValue={getName(
+                `fx:${lastEffect}`,
+                elk.EFFECT_NAMES[elk.EFFECT_MODES.indexOf(lastEffect)] ?? '',
+              )}
+              placeholder="Renomear este efeito"
               onChange={(e) => {
                 setName(`fx:${lastEffect}`, e.target.value)
                 rerender()
