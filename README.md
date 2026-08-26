@@ -71,5 +71,11 @@ Pacotes de 9 bytes, sempre `7E … EF`:
 | Ligar | `7E 00 04 F0 00 01 FF 00 EF` |
 | Desligar | `7E 00 04 00 00 00 FF 00 EF` |
 | Brilho (0–100) | `7E 00 01 XX 00 00 00 00 EF` |
-| Velocidade (0–100) | `7E 00 02 XX 00 00 00 00 EF` |
-| Efeito (0x80–0x9D) | `7E 00 03 XX 03 00 00 00 EF` |
+| Efeito + velocidade | `7E 00 03 <modo> <vel> 00 00 00 EF` |
+| Velocidade avulsa | `7E 00 02 XX 00 00 00 00 EF` |
+
+O modo vai de `0x80` a `0x9D` (30 efeitos). O byte seguinte é a
+**velocidade da animação** — confirmado nesta fita. O comando de
+velocidade avulsa (`7E 00 02 …`) não surte efeito aqui; a velocidade só
+muda quando vai junto com o efeito. O app manda os dois por segurança,
+já que outras revisões podem se comportar diferente.
