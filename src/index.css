@@ -149,3 +149,70 @@ input[type='range'] { width: 100%; accent-color: var(--accent); }
 
 .unsupported h1 { font-size: 18px; margin: 0; }
 .unsupported p { margin: 0; font-size: 14px; line-height: 1.5; }
+
+/* --- lista de fitas --- */
+
+.empty {
+  margin: 0;
+  font-size: 14px;
+  color: var(--dim);
+  text-align: center;
+  padding: 4px 0 2px;
+}
+
+.strip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--line);
+}
+.strip:last-of-type { border-bottom: 0; }
+
+.check {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border-radius: 6px;
+  border: 2px solid var(--line);
+}
+.check.on {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--dim);
+}
+.dot.connected { background: #46e08a; }
+.dot.connecting { background: #ffd000; }
+.dot.disconnected { background: #ff6b6b; }
+
+.rename {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  font-size: 15px;
+  color: var(--text);
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid transparent;
+  padding: 4px 0;
+}
+.rename:focus {
+  outline: none;
+  border-bottom-color: var(--accent);
+}
+
+.mini {
+  flex: none;
+  padding: 6px 10px;
+  font-size: 12px;
+  color: var(--dim);
+  border-radius: 8px;
+}

@@ -1,6 +1,10 @@
 /**
  * Camada Bluetooth. Sabe conectar, escrever e reconectar — e nada
  * sobre o significado dos bytes que carrega.
+ *
+ * Cada instancia de LedStrip cuida de UMA fita. Varias fitas ao mesmo
+ * tempo sao varias instancias: o navegador aguenta conexoes GATT
+ * simultaneas sem problema.
  */
 import { SERVICE_UUID, WRITE_UUID, NAME_PREFIXES, type Packet } from './protocol/elk'
 
@@ -14,48 +18,75 @@ export function isSupported(): boolean {
 export class LedStrip {
   private device: BluetoothDevice | null = null
   private characteristic: BluetoothRemoteGATTCharacteristic | null = null
+  private _status: Status = 'idle'
 
   /** Escritas sao enfileiradas: o GATT rejeita operacoes concorrentes. */
   private queue: Promise<void> = Promise.resolve()
 
-  onStatusChange: (status: Status) => void = () => {}
+  /** Avisa a interface a cada mudanca de estado. */
+  onStatusChange: () => void = () => {}
 
+  /**
+   * Identificador estavel do dispositivo dentro deste site. Sobrevive a
+   * reloads, entao serve de chave pra guardar o apelido que o usuario deu.
+   */
+  get id(): string {
+    return this.device?.id ?? ''
+  }
+
+  /**
+   * Muitos controladores nao anunciam o nome — aparecem como
+   * "Dispositivo desconhecido" no seletor. Por isso o apelido importa.
+   */
   get name(): string {
-    return this.device?.name ?? 'desconhecido'
+    return this.device?.name ?? 'Fita sem nome'
+  }
+
+  get status(): Status {
+    return this._status
   }
 
   get connected(): boolean {
     return !!this.device?.gatt?.connected && !!this.characteristic
   }
 
+  private setStatus(status: Status) {
+    this._status = status
+    this.onStatusChange()
+  }
+
   /**
    * Abre o seletor de dispositivos do Chrome e conecta no escolhido.
    * Precisa ser chamado a partir de um gesto do usuario (clique).
    *
-   * @param anyDevice lista todo dispositivo BLE por perto, e nao so os
-   *   de nome conhecido. Util se a sua fita anunciar um nome fora do padrao.
+   * @param anyDevice lista todo dispositivo BLE por perto, e nao so os de
+   *   nome conhecido. Necessario quando a fita nao anuncia o nome.
    */
   async connect(anyDevice = false): Promise<void> {
     if (!isSupported()) {
       throw new Error('Este navegador não suporta Web Bluetooth. Use o Chrome no Android.')
     }
 
-    this.onStatusChange('connecting')
+    this.setStatus('connecting')
     try {
       this.device = await navigator.bluetooth.requestDevice(
         anyDevice
           ? { acceptAllDevices: true, optionalServices: [SERVICE_UUID] }
           : {
-              filters: NAME_PREFIXES.map((namePrefix) => ({ namePrefix })),
+              filters: [
+                // Por servico funciona mesmo quando a fita nao anuncia nome.
+                { services: [SERVICE_UUID] },
+                ...NAME_PREFIXES.map((namePrefix) => ({ namePrefix })),
+              ],
               optionalServices: [SERVICE_UUID],
             },
       )
 
       this.device.addEventListener('gattserverdisconnected', this.handleDisconnect)
       await this.openGatt()
-      this.onStatusChange('connected')
+      this.setStatus('connected')
     } catch (err) {
-      this.onStatusChange('idle')
+      this.setStatus('idle')
       throw err
     }
   }
@@ -68,7 +99,7 @@ export class LedStrip {
 
   private handleDisconnect = () => {
     this.characteristic = null
-    this.onStatusChange('disconnected')
+    this.setStatus('disconnected')
   }
 
   /**
@@ -77,12 +108,12 @@ export class LedStrip {
    */
   async reconnect(): Promise<void> {
     if (!this.device) throw new Error('Nenhum dispositivo para reconectar.')
-    this.onStatusChange('connecting')
+    this.setStatus('connecting')
     try {
       await this.openGatt()
-      this.onStatusChange('connected')
+      this.setStatus('connected')
     } catch (err) {
-      this.onStatusChange('disconnected')
+      this.setStatus('disconnected')
       throw err
     }
   }

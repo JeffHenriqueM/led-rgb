@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { LedStrip, isSupported, type Status } from './ble'
+import { useCallback, useRef, useState } from 'react'
+import { LedStrip, isSupported } from './ble'
+import { getName, setName } from './names'
 import * as elk from './protocol/elk'
 
-/** Cores de acesso rapido — o que a gente realmente usa no dia a dia. */
+/** Cores de acesso rápido — o que a gente realmente usa no dia a dia. */
 const SWATCHES = [
   '#ff0000', '#ff7b00', '#ffd000', '#3dff3d',
   '#00d4ff', '#0044ff', '#8a2be2', '#ff2d95',
@@ -10,8 +11,8 @@ const SWATCHES = [
 ]
 
 /**
- * Um slider de cor dispara dezenas de eventos por segundo e o BLE nao
- * aguenta esse ritmo. Mandamos no maximo um pacote por intervalo,
+ * Um slider de cor dispara dezenas de eventos por segundo e o BLE não
+ * aguenta esse ritmo. Mandamos no máximo um pacote por intervalo,
  * sempre com o valor mais recente.
  */
 function useThrottledSend(delay = 60) {
@@ -39,41 +40,78 @@ function useThrottledSend(delay = 60) {
 }
 
 export default function App() {
-  const stripRef = useRef<LedStrip | null>(null)
-  if (!stripRef.current) stripRef.current = new LedStrip()
-  const strip = stripRef.current
-
-  const [status, setStatus] = useState<Status>('idle')
+  const [strips, setStrips] = useState<LedStrip[]>([])
+  const [selected, setSelected] = useState<Set<string>>(new Set())
   const [error, setError] = useState<string | null>(null)
   const [color, setColor] = useState('#00d4ff')
   const [bright, setBright] = useState(100)
 
+  // As mudanças de estado vivem dentro dos objetos LedStrip, não no React.
+  // Este contador existe só pra forçar o re-render quando elas acontecem.
+  const [, bump] = useState(0)
+  const rerender = useCallback(() => bump((n) => n + 1), [])
+
   const throttled = useThrottledSend()
 
-  useEffect(() => {
-    strip.onStatusChange = setStatus
-  }, [strip])
+  /** Só as fitas marcadas E conectadas recebem comando. */
+  const targets = strips.filter((s) => selected.has(s.id) && s.connected)
+  const canControl = targets.length > 0
 
-  const connected = status === 'connected'
+  const broadcast = (packet: elk.Packet) => {
+    for (const strip of targets) void strip.send(packet)
+  }
 
-  const run = async (fn: () => Promise<unknown>) => {
+  const addStrip = async (anyDevice: boolean) => {
     setError(null)
+    const strip = new LedStrip()
+    strip.onStatusChange = rerender
     try {
-      await fn()
+      await strip.connect(anyDevice)
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
+      // Cancelar o seletor cai aqui e não é erro que mereça alarde.
+      const message = err instanceof Error ? err.message : String(err)
+      if (!/cancel|user/i.test(message)) setError(message)
+      return
     }
+
+    if (strips.some((s) => s.id === strip.id)) {
+      strip.disconnect()
+      setError('Essa fita já está na lista.')
+      return
+    }
+
+    setStrips((prev) => [...prev, strip])
+    setSelected((prev) => new Set(prev).add(strip.id))
+  }
+
+  const removeStrip = (strip: LedStrip) => {
+    strip.disconnect()
+    setStrips((prev) => prev.filter((s) => s !== strip))
+    setSelected((prev) => {
+      const next = new Set(prev)
+      next.delete(strip.id)
+      return next
+    })
+  }
+
+  const toggle = (id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
   }
 
   const applyColor = (hex: string) => {
     setColor(hex)
     const [r, g, b] = elk.hexToRgb(hex)
-    throttled(() => void strip.send(elk.color(r, g, b)))
+    throttled(() => broadcast(elk.color(r, g, b)))
   }
 
   const applyBrightness = (percent: number) => {
     setBright(percent)
-    throttled(() => void strip.send(elk.brightness(percent)))
+    throttled(() => broadcast(elk.brightness(percent)))
   }
 
   if (!isSupported()) {
@@ -83,7 +121,7 @@ export default function App() {
           <h1>Navegador sem Bluetooth</h1>
           <p>
             Este app usa Web Bluetooth, que existe no <strong>Chrome no Android</strong> e
-            em navegadores desktop baseados em Chromium.
+            nos navegadores desktop baseados em Chromium.
           </p>
           <p className="dim">
             No iPhone nenhum navegador suporta a API — todos são obrigados a usar o motor
@@ -98,33 +136,62 @@ export default function App() {
     <main className="app">
       <header className="head">
         <h1>Fita LED</h1>
-        <span className={`badge ${status}`}>
-          {status === 'connected' && strip.name}
-          {status === 'connecting' && 'conectando…'}
-          {status === 'disconnected' && 'desconectado'}
-          {status === 'idle' && 'sem conexão'}
-        </span>
+        {strips.length > 0 && (
+          <span className="badge">
+            {targets.length} de {strips.length} selecionada{strips.length > 1 ? 's' : ''}
+          </span>
+        )}
       </header>
 
-      {!connected && (
-        <div className="card">
-          <button className="primary" onClick={() => run(() => strip.connect())}>
-            {status === 'disconnected' ? 'Reconectar' : 'Conectar na fita'}
-          </button>
-          <button className="ghost" onClick={() => run(() => strip.connect(true))}>
-            Não aparece? Listar todos os dispositivos
-          </button>
-        </div>
-      )}
+      <div className="card">
+        {strips.length === 0 && (
+          <p className="empty">Nenhuma fita conectada ainda.</p>
+        )}
+
+        {strips.map((strip) => (
+          <div className="strip" key={strip.id}>
+            <button
+              className={`check ${selected.has(strip.id) ? 'on' : ''}`}
+              onClick={() => toggle(strip.id)}
+              aria-label="Selecionar"
+            />
+            <span className={`dot ${strip.status}`} />
+            <input
+              className="rename"
+              defaultValue={getName(strip.id, strip.name)}
+              onChange={(e) => setName(strip.id, e.target.value)}
+              placeholder={strip.name}
+            />
+            {strip.status === 'disconnected' && (
+              <button
+                className="mini"
+                onClick={() => strip.reconnect().catch((e) => setError(String(e)))}
+              >
+                Reconectar
+              </button>
+            )}
+            <button className="mini" onClick={() => removeStrip(strip)} aria-label="Remover">
+              ✕
+            </button>
+          </div>
+        ))}
+
+        <button className="primary" onClick={() => addStrip(false)}>
+          {strips.length === 0 ? 'Conectar na fita' : 'Adicionar outra fita'}
+        </button>
+        <button className="ghost" onClick={() => addStrip(true)}>
+          Não aparece? Listar todos os dispositivos
+        </button>
+      </div>
 
       {error && <p className="error">{error}</p>}
 
-      <fieldset className="stack" disabled={!connected}>
+      <fieldset className="stack" disabled={!canControl}>
         <div className="card row">
-          <button className="primary" onClick={() => strip.send(elk.power(true))}>
+          <button className="primary" onClick={() => broadcast(elk.power(true))}>
             Ligar
           </button>
-          <button className="ghost" onClick={() => strip.send(elk.power(false))}>
+          <button className="ghost" onClick={() => broadcast(elk.power(false))}>
             Desligar
           </button>
         </div>
@@ -167,19 +234,13 @@ export default function App() {
           <label className="label">Efeitos</label>
           <div className="effects">
             {elk.EFFECTS.map((fx) => (
-              <button key={fx.mode} className="chip" onClick={() => strip.send(elk.effect(fx.mode))}>
+              <button key={fx.mode} className="chip" onClick={() => broadcast(elk.effect(fx.mode))}>
                 {fx.label}
               </button>
             ))}
           </div>
         </div>
       </fieldset>
-
-      {connected && (
-        <button className="ghost wide" onClick={() => strip.disconnect()}>
-          Desconectar
-        </button>
-      )}
     </main>
   )
 }
