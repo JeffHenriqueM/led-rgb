@@ -1,0 +1,12 @@
+{
+  "name": "Fita LED",
+  "short_name": "Fita LED",
+  "start_url": "/led-rgb/",
+  "scope": "/led-rgb/",
+  "display": "standalone",
+  "background_color": "#0b0d12",
+  "theme_color": "#0b0d12",
+  "icons": [
+    { "src": "/led-rgb/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
